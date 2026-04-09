@@ -33,7 +33,7 @@ no hooks into the agents themselves — purely a passive reader.
 
 | Concern              | Choice                         | Why |
 |----------------------|--------------------------------|-----|
-| Framework            | **.NET 9**                     | Latest LTS-track, fast startup, NativeAOT-friendly. |
+| Framework            | **.NET 10**                    | Current LTS, already installed on all the user's machines, fast startup, NativeAOT-friendly. |
 | UI                   | **Avalonia UI 11**             | Only mature .NET option that's truly cross-platform desktop (Win/macOS/Linux), supports transparent/borderless/topmost windows, small footprint. WPF is Windows-only; MAUI desktop is awkward for overlays. |
 | Packaging (Win)      | Self-contained single-file exe | No installer required for v1. |
 | Packaging (macOS)    | `.app` bundle via `dotnet publish -r osx-arm64` (+ `osx-x64`) | Universal-ish; sign ad-hoc for personal use. |
@@ -144,7 +144,7 @@ User can edit this file; the app reloads on file change.
 ```
 AgentUsageViewer.sln
 ├─ src/
-│  ├─ AgentUsageViewer.Core/          # netstandard2.1 / net9.0, no UI deps
+│  ├─ AgentUsageViewer.Core/          # net10.0, no UI deps
 │  │   ├─ Models/        UsageRecord, SessionSummary, Totals, ModelKey
 │  │   ├─ Parsers/       ClaudeJsonlParser, CodexJsonlParser   (streaming)
 │  │   ├─ Sources/       ClaudeUsageSource, CodexUsageSource   (dir scan + watch)
