@@ -8,4 +8,5 @@ public sealed record CodexLineEvent(
     string? Cwd,
     string? Model,
     UsageMetrics? Metrics,
-    long? ReportedTotalTokens);
+    long? ReportedTotalTokens,
+    CodexRateLimitSnapshot? RateLimits);

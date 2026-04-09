@@ -62,6 +62,18 @@ public sealed class CodexUsageSource : IUsageSource
         }
     }
 
+    public CodexRateLimitSnapshot? GetLatestRateLimits()
+    {
+        lock (_gate)
+        {
+            return _fileStates.Values
+                .Where(static state => state.LatestRateLimits is not null)
+                .OrderByDescending(static state => state.RateLimitsTimestampUtc)
+                .Select(static state => state.LatestRateLimits)
+                .FirstOrDefault();
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_cts is not null)
@@ -211,6 +223,10 @@ public sealed class CodexUsageSource : IUsageSource
 
         public bool HasTotals { get; private set; }
 
+        public CodexRateLimitSnapshot? LatestRateLimits { get; private set; }
+
+        public DateTimeOffset RateLimitsTimestampUtc { get; private set; }
+
         public void Apply(string sourceFile, CodexLineEvent parsed)
         {
             SessionId ??= parsed.SessionId;
@@ -223,6 +239,13 @@ public sealed class CodexUsageSource : IUsageSource
             if (!string.IsNullOrWhiteSpace(parsed.Model) && string.IsNullOrWhiteSpace(Model))
             {
                 Model = parsed.Model;
+            }
+
+            if (parsed.RateLimits is not null &&
+                (!LatestRateLimitsTimestampSet() || (parsed.TimestampUtc ?? DateTimeOffset.MinValue) >= RateLimitsTimestampUtc))
+            {
+                LatestRateLimits = parsed.RateLimits;
+                RateLimitsTimestampUtc = parsed.TimestampUtc ?? DateTimeOffset.UtcNow;
             }
 
             if (parsed.Metrics is null)
@@ -257,5 +280,7 @@ public sealed class CodexUsageSource : IUsageSource
                 Model,
                 Metrics);
         }
+
+        private bool LatestRateLimitsTimestampSet() => RateLimitsTimestampUtc != default;
     }
 }

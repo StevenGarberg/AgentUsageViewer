@@ -21,6 +21,11 @@ public sealed class CodexUsageTests
             Assert.Equal("gpt-5.4", record.Model);
             Assert.Equal(1800, record.Metrics.TotalTokens);
             Assert.Equal("019cea80-5c50-7522-88fa-d0a6c08a5409", record.SessionId);
+
+            var rateLimits = source.GetLatestRateLimits();
+            Assert.NotNull(rateLimits);
+            Assert.Equal(2.0, rateLimits!.Primary!.UsedPercent);
+            Assert.Equal(9.5, rateLimits.Secondary!.UsedPercent);
         }
         finally
         {

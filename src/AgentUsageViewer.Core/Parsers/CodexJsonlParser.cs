@@ -23,6 +23,7 @@ public sealed class CodexJsonlParser
             string? model = null;
             UsageMetrics? metrics = null;
             long? totalTokens = null;
+            CodexRateLimitSnapshot? rateLimits = null;
 
             if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
             {
@@ -55,7 +56,7 @@ public sealed class CodexJsonlParser
                     case "payload":
                         if (reader.TokenType == JsonTokenType.StartObject)
                         {
-                            ParsePayload(ref reader, type, ref sessionId, ref cwd, ref model, ref metrics, ref totalTokens);
+                            ParsePayload(ref reader, type, ref sessionId, ref cwd, ref model, ref metrics, ref totalTokens, ref rateLimits);
                         }
                         else
                         {
@@ -82,7 +83,8 @@ public sealed class CodexJsonlParser
                 cwd,
                 model,
                 metrics,
-                totalTokens);
+                totalTokens,
+                rateLimits);
 
             return true;
         }
@@ -112,7 +114,8 @@ public sealed class CodexJsonlParser
         ref string? cwd,
         ref string? model,
         ref UsageMetrics? metrics,
-        ref long? totalTokens)
+        ref long? totalTokens,
+        ref CodexRateLimitSnapshot? rateLimits)
     {
         string? nestedType = null;
 
@@ -157,6 +160,18 @@ public sealed class CodexJsonlParser
                     if (reader.TokenType == JsonTokenType.StartObject)
                     {
                         ParseTokenInfo(ref reader, ref metrics, ref totalTokens);
+                    }
+                    else
+                    {
+                        reader.Skip();
+                    }
+
+                    break;
+                case "rate_limits" when string.Equals(rootType, "event_msg", StringComparison.Ordinal) &&
+                                        string.Equals(nestedType, "token_count", StringComparison.Ordinal):
+                    if (reader.TokenType == JsonTokenType.StartObject)
+                    {
+                        rateLimits = ParseRateLimits(ref reader);
                     }
                     else
                     {
@@ -254,6 +269,91 @@ public sealed class CodexJsonlParser
         totalTokens = total == 0 ? metrics.Value.TotalTokens : total;
     }
 
+    private static CodexRateLimitSnapshot ParseRateLimits(ref Utf8JsonReader reader)
+    {
+        RateLimitWindow? primary = null;
+        RateLimitWindow? secondary = null;
+        string? planType = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                break;
+            }
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                continue;
+            }
+
+            var property = reader.GetString();
+            reader.Read();
+
+            switch (property)
+            {
+                case "primary" when reader.TokenType == JsonTokenType.StartObject:
+                    primary = ParseRateLimitWindow(ref reader);
+                    break;
+                case "secondary" when reader.TokenType == JsonTokenType.StartObject:
+                    secondary = ParseRateLimitWindow(ref reader);
+                    break;
+                case "plan_type":
+                    planType = reader.TokenType == JsonTokenType.String ? reader.GetString() : planType;
+                    break;
+                default:
+                    reader.Skip();
+                    break;
+            }
+        }
+
+        return new CodexRateLimitSnapshot(primary, secondary, planType);
+    }
+
+    private static RateLimitWindow ParseRateLimitWindow(ref Utf8JsonReader reader)
+    {
+        double usedPercent = 0d;
+        var windowMinutes = 0;
+        DateTimeOffset? resetsAtUtc = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                break;
+            }
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                continue;
+            }
+
+            var property = reader.GetString();
+            reader.Read();
+
+            switch (property)
+            {
+                case "used_percent":
+                    usedPercent = ReadDouble(ref reader);
+                    break;
+                case "window_minutes":
+                    windowMinutes = (int)ReadLong(ref reader);
+                    break;
+                case "resets_at":
+                    var seconds = ReadLong(ref reader);
+                    resetsAtUtc = seconds > 0
+                        ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+                        : null;
+                    break;
+                default:
+                    reader.Skip();
+                    break;
+            }
+        }
+
+        return new RateLimitWindow(usedPercent, windowMinutes, resetsAtUtc);
+    }
+
     private static long ReadLong(ref Utf8JsonReader reader)
     {
         if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt64(out var number))
@@ -264,6 +364,18 @@ public sealed class CodexJsonlParser
         return reader.TokenType == JsonTokenType.String && long.TryParse(reader.GetString(), out number)
             ? number
             : 0;
+    }
+
+    private static double ReadDouble(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetDouble(out var value))
+        {
+            return value;
+        }
+
+        return reader.TokenType == JsonTokenType.String && double.TryParse(reader.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)
+            ? value
+            : 0d;
     }
 
     private static bool TryGetSessionIdFromPath(string sourceFile, out string? sessionId)
