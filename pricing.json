@@ -1,0 +1,25 @@
+{
+  "claude-opus-4-6": {
+    "input": 15.0,
+    "cache_write": 18.75,
+    "cache_read": 1.5,
+    "output": 75.0
+  },
+  "claude-sonnet-4-6": {
+    "input": 3.0,
+    "cache_write": 3.75,
+    "cache_read": 0.3,
+    "output": 15.0
+  },
+  "claude-haiku-4-5": {
+    "input": 1.0,
+    "cache_write": 1.25,
+    "cache_read": 0.1,
+    "output": 5.0
+  },
+  "gpt-5.4": {
+    "input": 1.25,
+    "cached_input": 0.125,
+    "output": 10.0
+  }
+}

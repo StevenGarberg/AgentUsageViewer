@@ -1,0 +1,4 @@
+{"timestamp":"2026-03-14T04:00:15.693Z","type":"session_meta","payload":{"id":"019cea80-5c50-7522-88fa-d0a6c08a5409","cwd":"C:\\Users\\Example\\Repos\\VoiceApp","originator":"Codex Desktop","model_provider":"openai"}}
+{"timestamp":"2026-03-14T04:00:15.700Z","type":"turn_context","payload":{"turn_id":"019cea80-5cfe-7b90-b1c8-55acf3f4063a","cwd":"C:\\Users\\Example\\Repos\\VoiceApp","model":"gpt-5.4"}}
+{"timestamp":"2026-03-14T04:00:21.497Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":100,"output_tokens":50,"reasoning_output_tokens":10,"total_tokens":1160}}}}
+{"timestamp":"2026-03-14T04:01:21.497Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1500,"cached_input_tokens":200,"output_tokens":80,"reasoning_output_tokens":20,"total_tokens":1800}}}}
